@@ -4,12 +4,15 @@ import java.lang.annotation.Annotation
 import java.lang.reflect.Type
 import java.util.Iterator
 
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.`type`.ReferenceType
 import com.fasterxml.jackson.module.scala.DefaultScalaModule
+import com.fasterxml.jackson.module.scala.experimental.ScalaObjectMapper
 import io.swagger.converter._
 import io.swagger.models.Model
 import io.swagger.models.properties._
 import io.swagger.util.{Json, PrimitiveType}
+import scala.reflect.runtime.universe._
 
 object SwaggerScalaModelConverter {
   Json.mapper().registerModule(new DefaultScalaModule())
@@ -21,8 +24,11 @@ class SwaggerScalaModelConverter extends ModelConverter {
   override
   def resolveProperty(`type`: Type, context: ModelConverterContext,
     annotations: Array[Annotation] , chain: Iterator[ModelConverter]): Property = {
-    val javaType = Json.mapper().constructType(`type`)
+    val mapper = new ObjectMapper() with ScalaObjectMapper
+    mapper.registerModule(DefaultScalaModule)
+    val javaType = mapper.constructType(`type`)
     val cls = javaType.getRawClass
+
 
     if(cls != null) {
       // handle scala enums
@@ -81,7 +87,9 @@ class SwaggerScalaModelConverter extends ModelConverter {
 
   override
   def resolve(`type`: Type, context: ModelConverterContext, chain: Iterator[ModelConverter]): Model = {
-    val javaType = Json.mapper().constructType(`type`)
+    val mapper = new ObjectMapper() with ScalaObjectMapper
+    mapper.registerModule(DefaultScalaModule)
+    val javaType = mapper.constructType(`type`)
     getEnumerationInstance(javaType.getRawClass) match {
       case Some(enumInstance) => null // ignore scala enums
       case None =>
